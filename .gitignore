@@ -1,0 +1,36 @@
+# --- Backend ---
+venv/
+__pycache__/
+.env
+*.sqlite3
+*.pyc
+*.log
+.DS_Store
+
+# --- Frontend ---
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+dist-ssr
+*.local
+
+# Editor files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

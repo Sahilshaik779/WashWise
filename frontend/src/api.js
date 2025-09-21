@@ -89,3 +89,15 @@ export const getCustomerByQR = async (customerId) => {
   });
   return res.data;
 };
+
+// ----------------- Password Change -----------------
+export const changePassword = async (currentPassword, newPassword) => {
+  const token = localStorage.getItem("token");
+  const res = await axios.put(`${API_URL}/change-password`, {
+    current_password: currentPassword,
+    new_password: newPassword
+  }, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};

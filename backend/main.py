@@ -185,6 +185,30 @@ def update_customer_status(customer_id: str, status: StatusEnum, db: Session = D
     customer.qr_code_url = f"/qr_codes/{customer.id}.png"
     return customer
 
+# ✅ ADDED: Change password endpoint
+@app.put("/change-password")
+def change_password(
+    password_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    current_password = password_data.get("current_password")
+    new_password = password_data.get("new_password")
+    
+    if not current_password or not new_password:
+        raise HTTPException(status_code=400, detail="Both current and new passwords are required")
+    
+    # Verify current password
+    if not verify_password(current_password, current_user.password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    # Hash and update new password
+    hashed_password = get_password_hash(new_password)
+    current_user.password = hashed_password
+    db.commit()
+    
+    return {"message": "Password changed successfully"}
+
 # ✅ ADDED: Get customer by QR code
 @app.get("/customers/qr/{customer_id}", response_model=CustomerResponse)
 def get_customer_by_qr(customer_id: str, db: Session = Depends(get_db)):

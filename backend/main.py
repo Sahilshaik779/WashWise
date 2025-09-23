@@ -146,7 +146,6 @@ def my_customers(db: Session = Depends(get_db), current_user: User = Depends(get
     
     return customers
 
-# ✅ ADDED: QR-based status update endpoint
 @app.put("/customers/qr/{customer_id}/status", response_model=CustomerResponse)
 def update_customer_status_by_qr(
     customer_id: str, 
@@ -178,14 +177,17 @@ def update_customer_status_by_qr(
     return customer
 
 @app.put("/customers/{customer_id}/status", response_model=CustomerResponse)
-def update_customer_status(customer_id: str, status: StatusEnum, db: Session = Depends(get_db)):
+def update_customer_status(customer_id: str, status: StatusEnum, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Added current_user dependency for security
+    if current_user.role != "serviceman":
+        raise HTTPException(status_code=403, detail="Only servicemen can update status")
+        
     customer = update_status(db, customer_id, status)
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
     customer.qr_code_url = f"/qr_codes/{customer.id}.png"
     return customer
 
-# ✅ ADDED: Change password endpoint
 @app.put("/change-password")
 def change_password(
     password_data: dict,
@@ -209,16 +211,18 @@ def change_password(
     
     return {"message": "Password changed successfully"}
 
-# ✅ ADDED: Get customer by QR code
+# -----------------
+# 🚨 THIS IS THE FIX 🚨
+# -----------------
 @app.get("/customers/qr/{customer_id}", response_model=CustomerResponse)
-def get_customer_by_qr(customer_id: str, db: Session = Depends(get_db)):
+def get_customer_by_qr(customer_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Added 'current_user' dependency to ensure this is a protected endpoint
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
     customer.qr_code_url = f"/qr_codes/{customer.id}.png"
     return customer
 
-# ✅ ADDED: Test endpoint to generate missing QR codes
 @app.post("/generate-missing-qr")
 def generate_missing_qr_codes(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "serviceman":

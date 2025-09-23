@@ -82,13 +82,28 @@ export const updateStatusByQR = async (customerId) => {
   return res.data;
 };
 
-export const getCustomerByQR = async (customerId) => {
+// -----------------
+// 🚨 THIS IS THE FIX 🚨
+// -----------------
+// DELETED the old getCustomerByQR and getOrderByID functions
+// and REPLACED them with this single, correct version.
+export const getOrderByID = async (qr_code) => {
   const token = localStorage.getItem("token");
-  const res = await axios.get(`${API_URL}/customers/qr/${customerId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
+  try {
+    const res = await axios.get(`${API_URL}/customers/qr/${qr_code}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (error) {
+    // This makes sure backend errors (like "Order not found") are handled correctly
+    if (error.response && error.response.data && error.response.data.detail) {
+      throw new Error(error.response.data.detail);
+    }
+    // This will handle the "not valid JSON" error if the endpoint is still wrong
+    throw error;
+  }
 };
+
 
 // ----------------- Password Change -----------------
 export const changePassword = async (currentPassword, newPassword) => {

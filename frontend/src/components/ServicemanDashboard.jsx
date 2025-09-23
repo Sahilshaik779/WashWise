@@ -286,3 +286,54 @@ export default function ServicemanDashboard() {
     </div>
   );
 }
+{activeTab === "qr-scanner" && (
+    <div className="tab-content">
+        <div className="card">
+        {!scannedOrder ? (
+            <>
+            <h3 className="card-title">Scan QR Code</h3>
+            <div className="qr-input-container">
+                <div style={{flex: 1}}>
+                <label>QR Code Data:</label>
+                <input 
+                    type="text" 
+                    placeholder="Scan or enter Order ID..." 
+                    value={qrScanInput} 
+                    onChange={(e) => setQrScanInput(e.target.value)} 
+                    // THIS IS THE NEW LINE:
+                    onKeyPress={(e) => e.key === 'Enter' && handleFetchOrder()} 
+                    autoFocus 
+                />
+                </div>
+                <button onClick={handleFetchOrder} disabled={loading || !qrScanInput.trim()} className="btn-primary">{loading ? "Finding..." : "Find Order"}</button>
+            </div>
+            </>
+        ) : (
+            // ... the rest of the QR scanner code remains the same
+            <>
+                <h3 className="card-title">Update Order Status</h3>
+                <div className="scanned-order-details">
+                    <div><strong>Order Name:</strong> {scannedOrder.name}</div>
+                    <div><strong>Order ID:</strong> {scannedOrder.id}</div>
+                    <div><strong>Current Status:</strong> <span className="status-badge" style={{backgroundColor: getStatusColor(scannedOrder.status)}}>{scannedOrder.status.replace("_", " ").toUpperCase()}</span></div>
+                </div>
+                <div className="update-controls">
+                    <div style={{flex: 1}}>
+                        <label>Set New Status:</label>
+                        <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+                            <option value="pending">Pending</option>
+                            <option value="started">Started</option>
+                            <option value="washed">Washed</option>
+                            <option value="dried">Dried</option>
+                            <option value="ready_for_pickup">Ready for Pickup</option>
+                            <option value="picked_up">Picked Up</option>
+                        </select>
+                    </div>
+                    <button onClick={handleConfirmUpdate} disabled={loading} className="btn-primary">Confirm Update</button>
+                    <button onClick={() => setScannedOrder(null)} className="btn-secondary">Scan Another</button>
+                </div>
+            </>
+        )}
+        </div>
+    </div>
+)}

@@ -29,6 +29,7 @@ export default function App() {
     setCurrentPage("dashboard");
   };
 
+  // This function can be passed as a prop if needed, but the dashboards now handle their own logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -57,85 +58,13 @@ export default function App() {
     );
   }
 
-  // --- THIS IS THE CORRECTED SECTION ---
   if (currentPage === "dashboard") {
-    // If the user is an admin, render the self-contained ServicemanDashboard directly.
-    // It has its own header and layout.
+    // Now, both dashboards are rendered directly and control their own layouts
     if (role === "serviceman") {
       return <ServicemanDashboard />;
     }
-
-    // For any other role (like customer), use the old layout with the header.
     if (role === "customer") {
-      return (
-        <div style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
-          {/* Header for Customer Dashboard */}
-          <header style={{
-            backgroundColor: "white",
-            padding: "15px 30px",
-            borderBottom: "1px solid #dee2e6",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-            position: "sticky",
-            top: 0,
-            zIndex: 1000
-          }}>
-            <div style={{
-              maxWidth: "1400px",
-              margin: "0 auto",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                <h1 style={{ 
-                  margin: "0", 
-                  color: "#333", 
-                  fontSize: "1.5rem",
-                  fontWeight: "600"
-                }}>
-                  WashWise Portal
-                </h1>
-                <span style={{
-                  padding: "6px 12px",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  borderRadius: "20px",
-                  fontSize: "0.8rem",
-                  fontWeight: "600"
-                }}>
-                  Customer
-                </span>
-              </div>
-              
-              <button 
-                onClick={handleLogout}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "0.9rem",
-                  fontWeight: "600",
-                  transition: "all 0.2s ease"
-                }}
-              >
-                Logout
-              </button>
-            </div>
-          </header>
-
-          {/* Main Content for Customer */}
-          <main style={{
-            maxWidth: "1400px",
-            margin: "0 auto",
-            padding: "20px"
-          }}>
-            <CustomerDashboard />
-          </main>
-        </div>
-      );
+      return <CustomerDashboard />;
     }
   }
 

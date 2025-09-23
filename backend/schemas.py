@@ -1,10 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 from models import StatusEnum
 
 class CustomerCreate(BaseModel):
-    customer_username: str  # link to an existing customer user
+    customer_username: str
     clothes_count: int
 
 class CustomerResponse(BaseModel):
@@ -18,10 +18,11 @@ class CustomerResponse(BaseModel):
     owner_id: Optional[str] = None
     
     class Config:
-        from_attributes = True  # ✅ FIXED: Added this for SQLAlchemy compatibility
+        from_attributes = True
 
 class UserCreate(BaseModel):
     username: str
+    email: EmailStr # Use EmailStr for automatic email validation
     password: str
     role: str
 
@@ -29,10 +30,11 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
-class UserResponse(BaseModel):  # ✅ ADDED: Response model for user data
+class UserResponse(BaseModel):
     id: str
     username: str
     role: str
-    
+    email: EmailStr
+
     class Config:
         from_attributes = True

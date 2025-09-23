@@ -1,12 +1,12 @@
-// api.js
 import axios from "axios";
 
 const API_URL = "http://127.0.0.1:8000";
 
 // ----------------- Authentication -----------------
-export const registerUser = async (username, password, role) => {
+export const registerUser = async (username, email, password, role) => {
   const res = await axios.post(`${API_URL}/register`, {
     username,
+    email,
     password,
     role,
   });
@@ -70,23 +70,6 @@ export const updateStatus = async (id, status) => {
   return res.data;
 };
 
-export const updateStatusByQR = async (customerId) => {
-  const token = localStorage.getItem("token");
-  const res = await axios.put(
-    `${API_URL}/customers/qr/${customerId}/status`,
-    null,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-  return res.data;
-};
-
-// -----------------
-// 🚨 THIS IS THE FIX 🚨
-// -----------------
-// DELETED the old getCustomerByQR and getOrderByID functions
-// and REPLACED them with this single, correct version.
 export const getOrderByID = async (qr_code) => {
   const token = localStorage.getItem("token");
   try {
@@ -95,15 +78,12 @@ export const getOrderByID = async (qr_code) => {
     });
     return res.data;
   } catch (error) {
-    // This makes sure backend errors (like "Order not found") are handled correctly
     if (error.response && error.response.data && error.response.data.detail) {
       throw new Error(error.response.data.detail);
     }
-    // This will handle the "not valid JSON" error if the endpoint is still wrong
     throw error;
   }
 };
-
 
 // ----------------- Password Change -----------------
 export const changePassword = async (currentPassword, newPassword) => {

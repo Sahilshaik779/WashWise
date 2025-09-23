@@ -29,15 +29,6 @@ export default function App() {
     setCurrentPage("dashboard");
   };
 
-  // This function can be passed as a prop if needed, but the dashboards now handle their own logout
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    setRole(null);
-    setCurrentPage("landing");
-    setSelectedLoginType(null);
-  };
-
   const handleBackToLanding = () => {
     setCurrentPage("landing");
     setSelectedLoginType(null);
@@ -59,7 +50,7 @@ export default function App() {
   }
 
   if (currentPage === "dashboard") {
-    // Now, both dashboards are rendered directly and control their own layouts
+    // Both dashboards are now rendered directly and control their own layouts
     if (role === "serviceman") {
       return <ServicemanDashboard />;
     }

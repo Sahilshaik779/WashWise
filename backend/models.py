@@ -1,7 +1,8 @@
-from sqlalchemy import Column, String, Integer, Enum, DateTime, ForeignKey
+from sqlalchemy import Column, String, Integer, Enum, DateTime, ForeignKey # <-- THE FIX IS HERE
+from sqlalchemy.orm import relationship
+from database import Base
 import enum
 import uuid
-from database import Base
 from datetime import datetime
 
 class StatusEnum(str, enum.Enum):
@@ -12,13 +13,14 @@ class StatusEnum(str, enum.Enum):
     ready_for_pickup = "ready_for_pickup"
     picked_up = "picked_up"
 
-
 class User(Base):
     __tablename__ = "users"
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(100), unique=True, index=True, nullable=False)
     password = Column(String(255), nullable=False)
     role = Column(String(20), nullable=False)
+    customers = relationship("Customer", back_populates="owner")
 
 class Customer(Base):
     __tablename__ = "customers"
@@ -29,4 +31,5 @@ class Customer(Base):
     qr_code_path = Column(String(255))
     clothes_count = Column(Integer, default=1)
     monthly_usage = Column(Integer, default=0)
-    owner_id = Column(String(36), ForeignKey("users.id"))  # link to User table
+    owner_id = Column(String(36), ForeignKey("users.id"))
+    owner = relationship("User", back_populates="customers")

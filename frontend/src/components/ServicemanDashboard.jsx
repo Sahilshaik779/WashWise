@@ -115,8 +115,13 @@ export default function ServicemanDashboard() {
       <div className={`dashboard-layout ${isSidebarCollapsed ? 'collapsed' : ''}`}>
         <nav className="sidebar">
           <div className="sidebar-header">
+            {/* Toggle Switch for collapsing the sidebar */}
             <label className="toggle-switch">
-              <input type="checkbox" checked={!isSidebarCollapsed} onChange={() => setSidebarCollapsed(!isSidebarCollapsed)} />
+              <input 
+                type="checkbox" 
+                checked={!isSidebarCollapsed} 
+                onChange={() => setSidebarCollapsed(!isSidebarCollapsed)} 
+              />
               <span className="slider round"></span>
             </label>
           </div>
@@ -140,6 +145,7 @@ export default function ServicemanDashboard() {
           <h2 className="content-title">{currentTab.label}</h2>
           {message && (<div className={`message ${message.includes("successfully") ? 'success' : 'error'}`}>{message}<button onClick={() => setMessage("")}>×</button></div>)}
           
+          {/* --- Tab Content Rendered Here --- */}
           {activeTab === "active-orders" && ( <div className="tab-content"><div className="card"><h3 className="card-title">Filters</h3><div className="grid three-cols"><div><label>Search Orders:</label><input type="text" placeholder="Search by name or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div><div><label>Filter by Date:</label><input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} /></div><div><label>Filter by Customer:</label><input type="text" placeholder="Customer name..." value={customerFilter} onChange={(e) => setCustomerFilter(e.target.value)} /></div></div>{(searchTerm || dateFilter || customerFilter) && <button className="btn-secondary" onClick={() => { setSearchTerm(""); setDateFilter(""); setCustomerFilter(""); }}>Clear Filters</button>}</div><div className="card"><div className="table-container"><table className="data-table"><thead><tr><th>SL No</th><th>Order Name</th><th>Date</th><th>Count</th><th>Status</th><th>Modify</th></tr></thead><tbody>{activeOrders.map((order, idx) => (<tr key={order.id}><td>{idx + 1}</td><td><div className="order-name">{order.name}</div><div className="order-id">ID: {order.id.substring(0, 8)}...</div></td><td>{new Date(order.created_at).toLocaleDateString()}</td><td className="text-center">{order.clothes_count}</td><td><span className="status-badge" style={{backgroundColor: getStatusColor(order.status)}}>{order.status.replace("_", " ").toUpperCase()}</span></td><td><select value={order.status} onChange={(e) => handleStatusChange(order.id, e.target.value)}><option value="pending">Pending</option><option value="started">Started</option><option value="washed">Washed</option><option value="dried">Dried</option><option value="ready_for_pickup">Ready for Pickup</option><option value="picked_up">Picked Up</option></select></td></tr>))}</tbody></table>{activeOrders.length === 0 && <div className="no-data">No active orders found</div>}</div></div></div>)}
           {activeTab === "past-orders" && ( <div className="tab-content"><div className="card"><div className="table-container"><table className="data-table"><thead><tr><th>SL No</th><th>Order Name</th><th>Date</th><th>Count</th><th>Status</th></tr></thead><tbody>{pastOrders.map((order, idx) => (<tr key={order.id}><td>{idx + 1}</td><td><div className="order-name">{order.name}</div><div className="order-id">ID: {order.id.substring(0, 8)}...</div></td><td>{new Date(order.created_at).toLocaleDateString()}</td><td className="text-center">{order.clothes_count}</td><td><span className="status-badge" style={{backgroundColor: getStatusColor(order.status)}}>{order.status.replace("_", " ").toUpperCase()}</span></td></tr>))}</tbody></table>{pastOrders.length === 0 && <div className="no-data">No past orders found</div>}</div></div></div>)}
           {activeTab === "manage-customers" && ( <div className="tab-content"><div className="card"><div className="table-container"><table className="data-table"><thead><tr><th>Username</th><th>Role</th><th>Total Orders</th><th>Active Orders</th></tr></thead><tbody>{users.filter(u => u.role === "customer").map(user => { const userOrders = customers.filter(c => c.owner_id === user.id); const activeUserOrders = userOrders.filter(c => c.status !== "picked_up"); return (<tr key={user.id}><td><div className="order-name">{user.username}</div><div className="order-id">ID: {user.id.substring(0, 8)}...</div></td><td><span className="status-badge" style={{backgroundColor: "#28a745"}}>Customer</span></td><td className="text-center">{userOrders.length}</td><td className="text-center">{activeUserOrders.length}</td></tr>);})}</tbody></table></div></div></div>)}
@@ -286,54 +292,3 @@ export default function ServicemanDashboard() {
     </div>
   );
 }
-{activeTab === "qr-scanner" && (
-    <div className="tab-content">
-        <div className="card">
-        {!scannedOrder ? (
-            <>
-            <h3 className="card-title">Scan QR Code</h3>
-            <div className="qr-input-container">
-                <div style={{flex: 1}}>
-                <label>QR Code Data:</label>
-                <input 
-                    type="text" 
-                    placeholder="Scan or enter Order ID..." 
-                    value={qrScanInput} 
-                    onChange={(e) => setQrScanInput(e.target.value)} 
-                    // THIS IS THE NEW LINE:
-                    onKeyPress={(e) => e.key === 'Enter' && handleFetchOrder()} 
-                    autoFocus 
-                />
-                </div>
-                <button onClick={handleFetchOrder} disabled={loading || !qrScanInput.trim()} className="btn-primary">{loading ? "Finding..." : "Find Order"}</button>
-            </div>
-            </>
-        ) : (
-            // ... the rest of the QR scanner code remains the same
-            <>
-                <h3 className="card-title">Update Order Status</h3>
-                <div className="scanned-order-details">
-                    <div><strong>Order Name:</strong> {scannedOrder.name}</div>
-                    <div><strong>Order ID:</strong> {scannedOrder.id}</div>
-                    <div><strong>Current Status:</strong> <span className="status-badge" style={{backgroundColor: getStatusColor(scannedOrder.status)}}>{scannedOrder.status.replace("_", " ").toUpperCase()}</span></div>
-                </div>
-                <div className="update-controls">
-                    <div style={{flex: 1}}>
-                        <label>Set New Status:</label>
-                        <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
-                            <option value="pending">Pending</option>
-                            <option value="started">Started</option>
-                            <option value="washed">Washed</option>
-                            <option value="dried">Dried</option>
-                            <option value="ready_for_pickup">Ready for Pickup</option>
-                            <option value="picked_up">Picked Up</option>
-                        </select>
-                    </div>
-                    <button onClick={handleConfirmUpdate} disabled={loading} className="btn-primary">Confirm Update</button>
-                    <button onClick={() => setScannedOrder(null)} className="btn-secondary">Scan Another</button>
-                </div>
-            </>
-        )}
-        </div>
-    </div>
-)}

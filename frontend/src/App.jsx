@@ -11,8 +11,9 @@ export default function App() {
 
   // Check for existing authentication on app load
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
     const storedRole = localStorage.getItem("role");
+    
     if (token && storedRole) {
       setRole(storedRole);
       setCurrentPage("dashboard");
@@ -33,6 +34,16 @@ export default function App() {
     setCurrentPage("landing");
     setSelectedLoginType(null);
   };
+  
+  const handleLogout = () => {
+    // Clear all authentication data
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user_id");
+    
+    setRole(null);
+    setCurrentPage("landing");
+  };
 
   // Render based on current page
   if (currentPage === "landing") {
@@ -50,14 +61,15 @@ export default function App() {
   }
 
   if (currentPage === "dashboard") {
-    // Both dashboards are now rendered directly and control their own layouts
+    // Pass the handleLogout function as a prop to the dashboards
     if (role === "serviceman") {
-      return <ServicemanDashboard />;
+      return <ServicemanDashboard onLogout={handleLogout} />;
     }
     if (role === "customer") {
-      return <CustomerDashboard />;
+      return <CustomerDashboard onLogout={handleLogout} />;
     }
   }
 
-  return null;
+  // Fallback in case something goes wrong
+  return <LandingPage onSelectLoginType={handleSelectLoginType} />;
 }

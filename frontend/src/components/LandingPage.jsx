@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-// (SVG Icon and Logo components remain the same, they are included for completeness)
 const IconCustomer = () => (
   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>

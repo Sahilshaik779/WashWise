@@ -2,7 +2,7 @@ import { useState } from "react";
 import { loginUser, registerUser } from "../api";
 
 const IconCustomer = () => ( <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>);
-const IconAdmin = () => ( <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>);
+const IconAdmin = () => ( <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>);
 
 export default function AuthPage({ loginType, onLogin, onBack }) {
   const [username, setUsername] = useState("");
@@ -27,16 +27,21 @@ export default function AuthPage({ loginType, onLogin, onBack }) {
     setError("");
     try {
       const res = await loginUser(username, password);
+      
       if (res.role !== loginType) {
         setError(`Access denied. You are registered as a ${res.role}.`);
         setLoading(false);
         return;
       }
-      localStorage.setItem("token", res.access_token);
+      
+      localStorage.setItem("access_token", res.access_token);
       localStorage.setItem("role", res.role);
+      localStorage.setItem("user_id", res.user_id);
+      
       onLogin(res.role);
     } catch (e) {
-      setError("Invalid username or password");
+      const errorMessage = e.response?.data?.detail || "Invalid username or password.";
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -56,8 +61,9 @@ export default function AuthPage({ loginType, onLogin, onBack }) {
       setUsername("");
       setEmail("");
       setPassword("");
-    } catch (e) {
-      setError("Registration failed. Username or email may already exist.");
+    } catch (err) {
+      const errorMessage = err.response?.data?.detail || err.message || "Registration failed.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,3 @@
-
 # 1. ALL IMPORTS 
 
 import os
@@ -51,8 +50,10 @@ def send_status_update_email(email_to: str, username: str, subject: str, body: s
         print(f"Failed to send email: {e}")
 
 def enrich_order_response(order: Order) -> Order:
+    # --- FIX: qr_code_path now stores only the filename ---
     if order.qr_code_path:
-        order.qr_code_url = f"/{order.qr_code_path}"
+        # Construct the correct URL based on the StaticFiles mount point and the filename
+        order.qr_code_url = f"/qr_codes/{order.qr_code_path}"
         
     for item in order.items:
         workflow = SERVICE_WORKFLOWS.get(item.service_name, [])
@@ -102,22 +103,26 @@ def list_users(db: Session = Depends(get_db), current_user: User = Depends(get_c
 
 @app.get("/users/me/qrcodes", response_model=dict)
 def get_or_create_static_qrcodes(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.static_qr_codes and "user_qr" in current_user.static_qr_codes:
-        return current_user.static_qr_codes
+    if current_user.static_qr_codes and "user_qr_filename" in current_user.static_qr_codes:
+        filename = current_user.static_qr_codes["user_qr_filename"]
+        return {"user_qr": f"/qr_codes/{filename}"}
     
     qr_data = {"user_id": current_user.id}
     filename = f"user_{current_user.id}.png"
+    # generate_qr is still responsible for saving the file in the correct directory
     qr_path = generate_qr(data=qr_data, filename=filename)
     
-    user_qr_codes = {}
     if qr_path:
-        user_qr_codes["user_qr"] = f"/{qr_path}"
+        # --- FIX: Store only the filename, not the whole path ---
+        user_qr_codes = {"user_qr_filename": filename}
         current_user.static_qr_codes = user_qr_codes
         flag_modified(current_user, "static_qr_codes")
         db.add(current_user)
         db.commit()
+        # Return the fully constructed URL path
+        return {"user_qr": f"/qr_codes/{filename}"}
         
-    return user_qr_codes
+    return {}
 
 
 @app.post("/users/{user_id}/subscribe", response_model=UserResponse)
@@ -142,7 +147,8 @@ def _generate_and_save_order_qr(order: Order, db: Session):
     filename = f"order_{order.id}.png"
     qr_path = generate_qr(data=qr_data, filename=filename)
     if qr_path:
-        order.qr_code_path = qr_path
+        # --- FIX: Store ONLY the filename in the database ---
+        order.qr_code_path = filename
         db.add(order)
         db.commit()
         db.refresh(order)

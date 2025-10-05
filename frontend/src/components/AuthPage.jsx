@@ -1,261 +1,140 @@
 import { useState } from "react";
 import { loginUser, registerUser } from "../api";
 
+const IconCustomer = () => ( <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>);
+const IconAdmin = () => ( <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>);
+
 export default function AuthPage({ loginType, onLogin, onBack }) {
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
 
   const isCustomer = loginType === "customer";
-  const title = isCustomer ? "Customer Login" : "Admin Login";
-  const icon = isCustomer ? "👤" : "🔧";
-  const color = isCustomer ? "#28a745" : "#007bff";
+  const theme = {
+    color: isCustomer ? "#81ecec" : "#a29bfe",
+    gradientStart: isCustomer ? "#2dd4bf" : "#818cf8",
+    gradientEnd: isCustomer ? "#34d399" : "#c084fc",
+  };
+  const title = isCustomer ? "Customer Portal" : "Admin Portal";
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!username || !password) {
-      setError("Please enter username and password");
-      return;
-    }
-
+    if (!username || !password) return setError("Please enter username and password");
     setLoading(true);
     setError("");
-
     try {
       const res = await loginUser(username, password);
       
       if (res.role !== loginType) {
-        setError(`Invalid credentials for ${loginType} login. You are registered as ${res.role}.`);
+        setError(`Access denied. You are registered as a ${res.role}.`);
         setLoading(false);
         return;
       }
-
-      localStorage.setItem("token", res.access_token);
+      
+      localStorage.setItem("access_token", res.access_token);
       localStorage.setItem("role", res.role);
+      localStorage.setItem("user_id", res.user_id);
+      
       onLogin(res.role);
     } catch (e) {
-      setError("Invalid username or password");
+      const errorMessage = e.response?.data?.detail || "Invalid username or password.";
+      setError(errorMessage);
       setLoading(false);
     }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!username || !password) {
-      setError("Please enter username and password");
+    if (!username || !password || !email) {
+      setError("Please fill all fields");
       return;
     }
-
     setLoading(true);
     setError("");
-
     try {
-      await registerUser(username, password, loginType);
+      await registerUser(username, email, password, loginType);
       alert(`${loginType} registered successfully! Please login.`);
       setShowRegister(false);
       setUsername("");
+      setEmail("");
       setPassword("");
-    } catch (e) {
-      setError("Registration failed - username might already exist");
+    } catch (err) {
+      const errorMessage = err.response?.data?.detail || err.message || "Registration failed.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: `linear-gradient(135deg, ${color}22 0%, ${color}44 100%)`,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "20px",
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-    }}>
-      <div style={{
-        maxWidth: "450px",
-        width: "100%",
-        backgroundColor: "white",
-        borderRadius: "20px",
-        padding: "40px",
-        boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
-        position: "relative"
-      }}>
-        {/* Back Button */}
-        <button
-          onClick={onBack}
-          style={{
-            position: "absolute",
-            top: "20px",
-            left: "20px",
-            background: "none",
-            border: "none",
-            fontSize: "1.5rem",
-            cursor: "pointer",
-            color: "#666",
-            padding: "5px",
-            borderRadius: "50%",
-            transition: "all 0.2s ease"
-          }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = "#f8f9fa"}
-          onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
-        >
-          ←
-        </button>
-
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <div style={{ 
-            fontSize: "3rem", 
-            marginBottom: "15px",
-            color: color 
-          }}>
-            {icon}
+    <div className="auth-container">
+      <div className="background-overlay" />
+      <div className="auth-card" style={{ '--theme-color': theme.color }}>
+        <button onClick={onBack} className="back-button">←</button>
+        <div className="header">
+          <div className="icon-wrapper">
+            {isCustomer ? <IconCustomer /> : <IconAdmin />}
           </div>
-          <h2 style={{
-            color: "#333",
-            fontSize: "1.8rem",
-            fontWeight: "600",
-            marginBottom: "10px"
-          }}>
-            {showRegister ? `${title.replace('Login', 'Register')}` : title}
-          </h2>
-          <p style={{
-            color: "#666",
-            fontSize: "1rem",
-            margin: "0"
-          }}>
-            {showRegister 
-              ? `Create your ${isCustomer ? 'customer' : 'admin'} account`
-              : `Sign in to your ${isCustomer ? 'customer' : 'admin'} account`
-            }
-          </p>
+          <h2>{showRegister ? `Register ${isCustomer ? 'Customer' : 'Admin'}` : title}</h2>
+          <p>{showRegister ? `Create your new account` : `Sign in to continue`}</p>
         </div>
-
-        {/* Form */}
         <form onSubmit={showRegister ? handleRegister : handleLogin}>
-          <div style={{ marginBottom: "25px" }}>
-            <label style={{
-              display: "block",
-              marginBottom: "8px",
-              fontWeight: "600",
-              color: "#333"
-            }}>
-              Username
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
-              style={{
-                width: "100%",
-                padding: "15px",
-                fontSize: "1rem",
-                border: "2px solid #e9ecef",
-                borderRadius: "10px",
-                transition: "border-color 0.2s ease",
-                outline: "none"
-              }}
-              onFocus={(e) => e.target.style.borderColor = color}
-              onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-            />
+          <div className="input-group">
+            <label htmlFor="username">Username</label>
+            <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter your username" className="input-field" required/>
           </div>
-
-          <div style={{ marginBottom: "30px" }}>
-            <label style={{
-              display: "block",
-              marginBottom: "8px",
-              fontWeight: "600",
-              color: "#333"
-            }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              style={{
-                width: "100%",
-                padding: "15px",
-                fontSize: "1rem",
-                border: "2px solid #e9ecef",
-                borderRadius: "10px",
-                transition: "border-color 0.2s ease",
-                outline: "none"
-              }}
-              onFocus={(e) => e.target.style.borderColor = color}
-              onBlur={(e) => e.target.style.borderColor = "#e9ecef"}
-            />
+          {showRegister && (
+            <div className="input-group">
+              <label htmlFor="email">Email</label>
+              <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" className="input-field" required/>
+            </div>
+          )}
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+            <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className="input-field" required/>
           </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              padding: "15px",
-              fontSize: "1.1rem",
-              fontWeight: "600",
-              backgroundColor: loading ? "#6c757d" : color,
-              color: "white",
-              border: "none",
-              borderRadius: "10px",
-              cursor: loading ? "not-allowed" : "pointer",
-              transition: "all 0.2s ease",
-              marginBottom: "20px"
-            }}
-          >
-            {loading ? "⏳ Processing..." : (showRegister ? "Create Account" : "Sign In")}
+          <button type="submit" disabled={loading} className="submit-button"
+            style={{ background: `linear-gradient(135deg, ${theme.gradientStart}, ${theme.gradientEnd})` }}>
+            {loading ? "Processing..." : (showRegister ? "Create Account" : "Sign In")}
           </button>
-
-          {/* Toggle Register/Login */}
-          <div style={{ textAlign: "center" }}>
-            <button
-              type="button"
-              onClick={() => {
-                setShowRegister(!showRegister);
-                setError("");
-                setUsername("");
-                setPassword("");
-              }}
-              style={{
-                background: "none",
-                border: "none",
-                color: color,
-                fontSize: "0.95rem",
-                cursor: "pointer",
-                textDecoration: "underline"
-              }}
-            >
-              {showRegister 
-                ? "Already have an account? Sign In" 
-                : "Don't have an account? Register"
-              }
+          <div className="toggle-form">
+            <button type="button" onClick={() => { setShowRegister(!showRegister); setError(""); }}>
+              {showRegister ? "Already have an account? Sign In" : "Don't have an account? Register"}
             </button>
           </div>
         </form>
-
-        {/* Error Message */}
-        {error && (
-          <div style={{
-            marginTop: "20px",
-            padding: "15px",
-            backgroundColor: "#f8d7da",
-            color: "#721c24",
-            borderRadius: "8px",
-            border: "1px solid #f5c6cb",
-            fontSize: "0.9rem",
-            textAlign: "center"
-          }}>
-            {error}
-          </div>
-        )}
+        {error && <div className="error-message">{error}</div>}
       </div>
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800&display=swap');
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #1f2430; }
+        * { box-sizing: border-box; }
+      `}</style>
+      <style jsx>{`
+        .auth-container { min-height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; overflow: hidden; }
+        .background-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at center, rgba(36, 44, 61, 0.3) 0%, rgba(36, 44, 61, 0.6) 90%); z-index: 2; }
+        .auth-card { width: 100%; max-width: 420px; position: relative; z-index: 3; padding: 50px 40px; background-color: rgba(36, 44, 61, 0.55); backdrop-filter: blur(16px); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 25px 50px rgba(0,0,0,0.3); color: #fff; }
+        .back-button { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); font-size: 1.5rem; cursor: pointer; color: #fff; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+        .back-button:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+        .header { text-align: center; margin-bottom: 40px; }
+        .icon-wrapper { color: var(--theme-color); margin-bottom: 15px; }
+        .header h2 { font-size: 2rem; font-weight: 700; margin: 0 0 10px; }
+        .header p { color: rgba(255, 255, 255, 0.7); margin: 0; }
+        .input-group { margin-bottom: 25px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255, 255, 255, 0.8); }
+        .input-field { width: 100%; padding: 15px; font-size: 1rem; background-color: rgba(0,0,0, 0.2); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; color: #fff; transition: border-color 0.2s ease, box-shadow 0.2s ease; outline: none; }
+        .input-field::placeholder { color: rgba(255, 255, 255, 0.4); }
+        .input-field:focus { border-color: var(--theme-color); box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-color) 30%, transparent); }
+        .submit-button { width: 100%; padding: 15px; font-size: 1.1rem; font-weight: 600; color: white; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; margin-bottom: 25px; box-shadow: 0 10px 20px -5px color-mix(in srgb, var(--theme-color) 40%, black); }
+        .submit-button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+        .submit-button:disabled { background: #495057; cursor: not-allowed; box-shadow: none; }
+        .toggle-form { text-align: center; }
+        .toggle-form button { background: none; border: none; color: var(--theme-color); font-size: 0.95rem; font-weight: 500; cursor: pointer; }
+        .error-message { margin-top: 20px; padding: 15px; background-color: rgba(217, 48, 77, 0.2); color: #f8b4c0; border-radius: 8px; border: 1px solid rgba(217, 48, 77, 0.5); font-size: 0.9rem; text-align: center; }
+      `}</style>
     </div>
   );
 }

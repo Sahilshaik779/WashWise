@@ -1,25 +1,37 @@
 import pymysql
 pymysql.install_as_MySQLdb()
 
+import os
+from dotenv import load_dotenv
+from urllib.parse import quote_plus
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
 import re
 
+# --- Load Environment Variables ---
+load_dotenv()
+
 # --- Database Configuration ---
-DB_URL = "mysql+pymysql://root:Sahil%402127@127.0.0.1:3306/laundry_db_v2"
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD_RAW = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
+
+if not all([DB_USER, DB_PASSWORD_RAW, DB_HOST, DB_PORT, DB_NAME]):
+    raise ValueError("One or more database environment variables (DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME) are missing. Please check your .env file.")
+
+DB_PASSWORD = quote_plus(DB_PASSWORD_RAW)
+
+DB_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 # --- Automatic Database Creation ---
 try:
-    # Extract DB name from the URL to create it if it doesn't exist
-    db_name_match = re.search(r"/(\w+)$", DB_URL)
-    if not db_name_match:
-        raise ValueError("Could not determine database name from DB_URL")
-    
-    DB_NAME = db_name_match.group(1)
     # Connect to the server without specifying a database
-    server_url = DB_URL.rsplit('/', 1)[0]
+    server_url = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}"
     
     server_engine = create_engine(server_url)
     with server_engine.connect() as connection:
@@ -28,11 +40,9 @@ try:
     
 except (OperationalError, ValueError) as e:
     print(f"⚠️  Error during database auto-creation: {e}")
-    print("Please ensure the MySQL server is running and the credentials in 'database.py' are correct.")
-    # as it will provide a clear error to the user if the DB still can't be accessed.
+    print("Please ensure the MySQL server is running and the credentials in your .env file are correct.")
 
 # --- Main Engine and Session Setup ---
-# Create the engine that connects to the specific database
 engine = create_engine(
     DB_URL,
     echo=True,      
@@ -53,4 +63,3 @@ def get_db():
         yield db
     finally:
         db.close()
-

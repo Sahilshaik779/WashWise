@@ -7,6 +7,9 @@ __pycache__/
 *.log
 .DS_Store
 
+#qr data
+qr_codes/
+
 # --- Frontend ---
 # Logs
 logs

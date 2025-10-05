@@ -56,7 +56,7 @@ const PaymentModal = ({ isOpen, onClose, planDetails, onConfirmPayment }) => {
             </div>
           </div>
           <button type="submit" className="btn-primary btn-pay" disabled={isProcessing}>
-            {isProcessing ? <div className="mini-spinner"></div> : `Pay ₹${planDetails.price}`}
+            {isProcessing ? <div className="mini-spinner"></div> : Pay ₹${planDetails.price}}
           </button>
         </form>
       </div>
@@ -137,7 +137,7 @@ export default function CustomerDashboard({ onLogout }) {
         setMessage("Subscription updated successfully!");
         await fetchData();
     } catch (error) {
-        setMessage(`Error: ${error.response?.data?.detail || error.message}`);
+        setMessage(Error: ${error.response?.data?.detail || error.message});
     } finally {
         setLoading(false);
     }
@@ -164,14 +164,14 @@ export default function CustomerDashboard({ onLogout }) {
       setMessage("Password updated successfully!");
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
     } catch (error) {
-      setMessage(`Error: ${error.response?.data?.detail || error.message}`);
+      setMessage(Error: ${error.response?.data?.detail || error.message});
     } finally {
       setLoading(false);
     }
   };
 
   const handleImageClick = (src) => {
-    setModalImageSrc(`${API_URL}${src}`);
+    setModalImageSrc(${API_URL}${src});
     setIsModalOpen(true);
   };
   
@@ -185,7 +185,7 @@ export default function CustomerDashboard({ onLogout }) {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    return ${day}/${month}/${year};
   };
 
   const calculateProgress = (serviceName, currentStatus) => {
@@ -242,7 +242,7 @@ export default function CustomerDashboard({ onLogout }) {
         <div className="logo-section"><WashWiseLogo small /><span className="brand-name">WashWise</span></div>
         <div className="user-section"><span className="user-role customer">Customer</span><button className="btn-logout" onClick={onLogout}>Logout</button></div>
       </header>
-      <div className={`dashboard-layout ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+      <div className={dashboard-layout ${isSidebarCollapsed ? 'collapsed' : ''}}>
         <nav className="sidebar">
           <div className="sidebar-header"><label className="toggle-switch"><input type="checkbox" checked={!isSidebarCollapsed} onChange={() => setSidebarCollapsed(!isSidebarCollapsed)} /><span className="slider round"></span></label></div>
           <ul className="sidebar-nav">
@@ -251,7 +251,7 @@ export default function CustomerDashboard({ onLogout }) {
         </nav>
         <main className="content-area">
           <h2 className="content-title">{currentTab.label}</h2>
-          {message && (<div className={`message ${message.includes("successfully") ? 'success' : 'error'}`}><span>{message}</span><button onClick={() => setMessage("")}>×</button></div>)}
+          {message && (<div className={message ${message.includes("successfully") ? 'success' : 'error'}}><span>{message}</span><button onClick={() => setMessage("")}>×</button></div>)}
           
           {activeTab === "my-orders" && ( 
             <div className="tab-content">
@@ -268,7 +268,7 @@ export default function CustomerDashboard({ onLogout }) {
                                 <div className="item-main-info"><div className="item-details"><span className="item-quantity">{item.quantity}x</span><span className="item-name">{SERVICE_PRICES[item.service_name]?.name || item.service_name}</span></div>
                                 <div className="cost-info-inline"><strong>₹{item.cost.toFixed(2)}</strong>{item.cost === 0 && item.isCoveredByPlan && <span className="plan-covered-tag">PLAN</span>}</div>
                                 </div>
-                                <div className="item-progress-container"><div className="progress-bar item-progress-bar"><div className="progress-bar-inner item-progress-bar-inner" style={{ width: `${progress}%` }}></div></div></div>
+                                <div className="item-progress-container"><div className="progress-bar item-progress-bar"><div className="progress-bar-inner item-progress-bar-inner" style={{ width: ${progress}% }}></div></div></div>
                             </div>
                         </div>
                       </div>
@@ -276,7 +276,7 @@ export default function CustomerDashboard({ onLogout }) {
                         <div className="card-footer">
                           <p>Track this specific order with its QR Code</p>
                           <div className="qr-code-box">
-                            <img src={`${API_URL}${item.orderQrCodeUrl}`} alt="Order-Specific QR Code" className="qr-image" onClick={() => handleImageClick(item.orderQrCodeUrl)}/>
+                            <img src={${API_URL}${item.orderQrCodeUrl}} alt="Order-Specific QR Code" className="qr-image" onClick={() => handleImageClick(item.orderQrCodeUrl)}/>
                           </div>
                         </div>
                       )}
@@ -291,7 +291,7 @@ export default function CustomerDashboard({ onLogout }) {
             <div className="tab-content">
               <div className="card">
                 {completedOrders.length === 0 ? (<div className="no-data-card small"><h3>No Completed Orders Yet</h3><p>Your past orders will appear here.</p></div>) : (
-                  <div className="table-container"><table className="data-table"><thead><tr><th>Order ID</th><th>Date</th><th>Services</th><th>Cost</th><th>Payment</th><th>Status</th></tr></thead><tbody>{completedOrders.map(order => (<tr key={order.id}><td><div className="order-name">#{order.id.substring(0, 8)}</div><div className="order-id">{order.id.substring(8, 16)}...</div></td><td className="text-center">{formatDate(order.created_at)}</td><td>{order.items.map(i => SERVICE_PRICES[i.service_name]?.name || i.service_name).join(', ')}</td><td className="text-center">₹{order.total_cost.toFixed(2)}{order.is_covered_by_plan && <div className="plan-covered-small">Plan</div>}</td><td><span className={`payment-badge ${order.payment_status}`}>{order.payment_status.toUpperCase()}</span></td><td><span className="status-badge" style={{backgroundColor: getStatusColor('picked_up')}}>COMPLETED</span></td></tr>))}</tbody></table></div>
+                  <div className="table-container"><table className="data-table"><thead><tr><th>Order ID</th><th>Date</th><th>Services</th><th>Cost</th><th>Payment</th><th>Status</th></tr></thead><tbody>{completedOrders.map(order => (<tr key={order.id}><td><div className="order-name">#{order.id.substring(0, 8)}</div><div className="order-id">{order.id.substring(8, 16)}...</div></td><td className="text-center">{formatDate(order.created_at)}</td><td>{order.items.map(i => SERVICE_PRICES[i.service_name]?.name || i.service_name).join(', ')}</td><td className="text-center">₹{order.total_cost.toFixed(2)}{order.is_covered_by_plan && <div className="plan-covered-small">Plan</div>}</td><td><span className={payment-badge ${order.payment_status}}>{order.payment_status.toUpperCase()}</span></td><td><span className="status-badge" style={{backgroundColor: getStatusColor('picked_up')}}>COMPLETED</span></td></tr>))}</tbody></table></div>
                 )}
               </div>
             </div>
@@ -314,7 +314,7 @@ export default function CustomerDashboard({ onLogout }) {
                             {myQrCodes && myQrCodes.user_qr ? (
                                 <div className="static-qr-container">
                                     <img 
-                                        src={`${API_URL}${myQrCodes.user_qr}`} 
+                                        src={${API_URL}${myQrCodes.user_qr}} 
                                         alt="Your Static QR Code" 
                                         onClick={() => handleImageClick(myQrCodes.user_qr)}
                                     />
@@ -335,7 +335,7 @@ export default function CustomerDashboard({ onLogout }) {
                                 }</strong>.</p>
                                 <div className="usage-meter">
                                     <div className="usage-label"><span>Monthly Service Usage</span><strong>{accountInfo.services_used_this_month} / 4</strong></div>
-                                    <div className="progress-bar plan-progress-bar"><div className="progress-bar-inner" style={{width: `${(accountInfo.services_used_this_month / 4) * 100}%`}}></div></div>
+                                    <div className="progress-bar plan-progress-bar"><div className="progress-bar-inner" style={{width: ${(accountInfo.services_used_this_month / 4) * 100}%}}></div></div>
                                 </div>
                             </>
                         ) : (
@@ -347,7 +347,7 @@ export default function CustomerDashboard({ onLogout }) {
                         <h3 className="card-title">Upgrade Your Plan</h3>
                         <p className="card-subtitle">Unlock more benefits and enjoy premium services with our subscription plans.</p>
                         <div className="plans-container">
-                            <div className={`plan-card standard ${accountInfo.membership_plan === 'standard' ? 'active' : ''} ${accountInfo.membership_plan === 'premium' ? 'unavailable' : ''}`}>
+                            <div className={plan-card standard ${accountInfo.membership_plan === 'standard' ? 'active' : ''} ${accountInfo.membership_plan === 'premium' ? 'unavailable' : ''}}>
                                 {accountInfo.membership_plan === 'standard' && <div className="current-plan-banner">Current Plan</div>}
                                 <div className="plan-header">
                                     <h4>Standard Plan</h4>
@@ -372,7 +372,7 @@ export default function CustomerDashboard({ onLogout }) {
                                     </button>
                                 </div>
                             </div>
-                            <div className={`plan-card premium ${accountInfo.membership_plan === 'premium' ? 'active' : ''}`}>
+                            <div className={plan-card premium ${accountInfo.membership_plan === 'premium' ? 'active' : ''}}>
                                 {accountInfo.membership_plan === 'premium' && <div className="current-plan-banner">Current Plan</div>}
                                 <div className="plan-header">
                                     <h4>Premium Plan</h4>
@@ -408,7 +408,7 @@ export default function CustomerDashboard({ onLogout }) {
         </main>
       </div>
       
-      <style jsx="true" global="true">{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800&display=swap'); @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap'); body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f4f7f9; } * { box-sizing: border-box; }`}</style>
+      <style jsx="true" global="true">{@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800&display=swap'); @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap'); body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f4f7f9; } * { box-sizing: border-box; }}</style>
       <style jsx="true">{`
         :root {
             --primary-color: #48C9B0;

@@ -41,17 +41,8 @@ def verify_token(token: str):
 
 # --- Current User Dependency ---
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    try:
-        payload = verify_token(token)
-        user = db.query(User).filter(User.username == payload["username"]).first()
-        if not user:
-            print(f"User not found for username: {payload.get('username')}")
-            raise HTTPException(status_code=401, detail="User not found")
-        return user
-    except HTTPException:
-        # Re-raise HTTPExceptions as-is
-        raise
-    except Exception as e:
-        # Catch any other unexpected errors
-        print(f"Unexpected error in get_current_user: {type(e).__name__}: {e}")
-        raise HTTPException(status_code=403, detail="Could not validate credentials")
+    payload = verify_token(token)
+    user = db.query(User).filter(User.username == payload["username"]).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user

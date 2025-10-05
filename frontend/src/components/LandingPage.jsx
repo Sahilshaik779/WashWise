@@ -72,7 +72,7 @@ export default function LandingPage({ onSelectLoginType }) {
             <div className="portal-icon-wrapper customer-icon"><IconCustomer /></div>
             <h2 className="portal-title">Customer Portal</h2>
             <p className="portal-description">Access your personal wardrobe, track orders, and manage preferences.</p>
-            <div className={`portal-glow ${hoveredPortal === 'customer' ? 'active' : ''}`} />
+            <div className={portal-glow ${hoveredPortal === 'customer' ? 'active' : ''}} />
           </div>
 
           {/* Admin Portal Card */}
@@ -85,7 +85,7 @@ export default function LandingPage({ onSelectLoginType }) {
             <div className="portal-icon-wrapper admin-icon"><IconAdmin /></div>
             <h2 className="portal-title">Admin Portal</h2>
             <p className="portal-description">Oversee operations, manage services, and access the dashboard.</p>
-            <div className={`portal-glow ${hoveredPortal === 'admin' ? 'active' : ''}`} />
+            <div className={portal-glow ${hoveredPortal === 'admin' ? 'active' : ''}} />
           </div>
         </section>
         

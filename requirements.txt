@@ -5,4 +5,6 @@ pillow==10.2.0
 sqlalchemy
 pydantic
 passlib[bcrypt]
-
+pydantic[email]
+requests python-dotenv
+psycopg2-binary

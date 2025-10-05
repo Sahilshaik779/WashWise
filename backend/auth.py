@@ -1,4 +1,5 @@
 # auth.py
+import os
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
@@ -6,9 +7,11 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User
 from passlib.context import CryptContext
+from dotenv import load_dotenv
 
 # --- Configuration ---
-SECRET_KEY = "your-secret-key"  # replace with a secure key
+load_dotenv()
+SECRET_KEY = os.getenv("SECRET_KEY", "a-very-insecure-default-key-for-testing-only") 
 ALGORITHM = "HS256"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -32,7 +35,8 @@ def verify_token(token: str):
         if username is None or role is None:
             raise HTTPException(status_code=401, detail="Invalid token")
         return {"username": username, "role": role}
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT Error: {e}")
         raise HTTPException(status_code=401, detail="Invalid token")
 
 # --- Current User Dependency ---

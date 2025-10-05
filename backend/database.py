@@ -1,43 +1,52 @@
-# database.py
 import pymysql
 pymysql.install_as_MySQLdb()
 
-# database.py
-# database.py
-import pymysql
-pymysql.install_as_MySQLdb()
-
-# database.py
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import OperationalError
+import re
 
-SQLALCHEMY_DATABASE_URL = "mysql+pymysql://root:Sahil%402127@127.0.0.1:3306/laundry_db"
+# --- Database Configuration ---
+DB_URL = "mysql+pymysql://root:Sahil%402127@127.0.0.1:3306/laundry_db_v2"
 
-# Create engine
+# --- Automatic Database Creation ---
+try:
+    # Extract DB name from the URL to create it if it doesn't exist
+    db_name_match = re.search(r"/(\w+)$", DB_URL)
+    if not db_name_match:
+        raise ValueError("Could not determine database name from DB_URL")
+    
+    DB_NAME = db_name_match.group(1)
+    # Connect to the server without specifying a database
+    server_url = DB_URL.rsplit('/', 1)[0]
+    
+    server_engine = create_engine(server_url)
+    with server_engine.connect() as connection:
+        connection.execute(text(f"CREATE DATABASE IF NOT EXISTS {DB_NAME}"))
+    print(f"✅ Database '{DB_NAME}' is ready.")
+    
+except (OperationalError, ValueError) as e:
+    print(f"⚠️  Error during database auto-creation: {e}")
+    print("Please ensure the MySQL server is running and the credentials in 'database.py' are correct.")
+    # as it will provide a clear error to the user if the DB still can't be accessed.
+
+# --- Main Engine and Session Setup ---
+# Create the engine that connects to the specific database
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    echo=True,       # logs SQL statements for debugging
+    DB_URL,
+    echo=True,      
     future=True
 )
 
-# ----------------------
-# Create session class
-# ----------------------
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
 )
 
-# ----------------------
-# Base class for models
-# ----------------------
 Base = declarative_base()
 
-# ----------------------
-# Dependency for FastAPI routes
-# ----------------------
 def get_db():
     db = SessionLocal()
     try:
@@ -45,10 +54,3 @@ def get_db():
     finally:
         db.close()
 
-# ----------------------
-# Optional: auto-create tables on import
-# ----------------------
-# Import your models here to ensure tables are created
-from database import Base, engine
-from models import User, Customer
-Base.metadata.create_all(bind=engine)

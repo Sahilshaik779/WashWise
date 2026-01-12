@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # 1. Database
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      # These tell Postgres what user/pass to CREATE
+      - POSTGRES_USER=washwise
+      - POSTGRES_PASSWORD=securepassword
+      - POSTGRES_DB=washwise_db
+    ports:
+      - "5433:5432"  # Maps local 5433 to container 5432 (avoids conflict)
+
+  # 2. Backend API
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      # --- THESE ARE THE MISSING ONES YOUR PYTHON CODE NEEDS ---
+      - DB_USER=washwise
+      - DB_PASSWORD=securepassword
+      - DB_HOST=db         # "db" matches the service name above
+      - DB_PORT=5432       # Internal container port (not 5433)
+      - DB_NAME=washwise_db
+      
+      # Other settings
+      - DATABASE_URL=postgresql://washwise:securepassword@db/washwise_db
+      - SECRET_KEY=your_super_secret_key
+      - FRONTEND_URL=http://localhost:3000
+      - ENVIRONMENT=production
+
+  # 3. Frontend App
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+
+volumes:
+  postgres_data:

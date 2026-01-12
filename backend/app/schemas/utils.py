@@ -2,6 +2,7 @@ import os
 import qrcode
 from PIL import Image
 import json
+
 QR_FOLDER = "qr_codes"
 
 # Create QR codes directory if it doesn't exist
@@ -29,7 +30,8 @@ def generate_qr(data: dict, filename: str) -> str:
         qr_img.save(qr_path)
         
         if os.path.exists(qr_path):
-            return qr_path
+            # CHANGED: Return only the filename for better consistency with main.py
+            return filename
         else:
             return None
             

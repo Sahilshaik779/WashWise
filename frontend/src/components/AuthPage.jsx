@@ -1,139 +1,228 @@
+// src/components/AuthPage.jsx
 import { useState } from "react";
-import { loginUser, registerUser } from "../api";
+import { useNavigate } from "react-router-dom"; // CHANGED: Import hook
+import { loginUser, registerUser, requestPasswordReset } from "../api";
+import { WashWiseLogo, IconCustomer, IconAdmin } from "./common/Icons"; // Use shared icons if you created them, otherwise keep local SVGs
 
-const IconCustomer = () => ( <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>);
-const IconAdmin = () => ( <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>);
+// Keep local SVGs if you haven't created the shared file yet
+const LocalIconCustomer = () => ( <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>);
+const LocalIconAdmin = () => ( <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>);
+const LocalWashWiseLogo = () => ( <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="url(#logo-gradient)" strokeWidth="1.5"/><path d="M12 7C14.7614 7 17 9.23858 17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 10.1642 8.21203 8.6132 9.875 7.82883" stroke="url(#logo-gradient)" strokeWidth="1.5" strokeLinecap="round"/><defs><linearGradient id="logo-gradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse"><stop stopColor="#81ECEC"/><stop offset="1" stopColor="#74B9FF"/></linearGradient></defs></svg>);
 
-export default function AuthPage({ loginType, onLogin, onBack }) {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState(""); 
-  const [password, setPassword] = useState("");
+
+export default function AuthPage({ loginType, onBack }) { // Removed unused onLogin prop
+  const navigate = useNavigate(); // CHANGED: Hook for navigation
+  const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [formData, setFormData] = useState({ username: "", email: "", password: "" });
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
 
-  const isCustomer = loginType === "customer";
-  const theme = {
-    color: isCustomer ? "#81ecec" : "#a29bfe",
-    gradientStart: isCustomer ? "#2dd4bf" : "#818cf8",
-    gradientEnd: isCustomer ? "#34d399" : "#c084fc",
+  // Toggle between customer/serviceman if loginType wasn't passed (direct link access)
+  const [currentType, setCurrentType] = useState(loginType || 'customer');
+
+  const handleGoogleLogin = () => {
+    // This is handled by api.js redirect, so no router change needed here yet
+    window.location.href = `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/auth/login/google`;
   };
-  const title = isCustomer ? "Customer Portal" : "Admin Portal";
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!username || !password) return setError("Please enter username and password");
-    setLoading(true);
     setError("");
+    setMessage("");
+    setLoading(true);
+
     try {
-      const res = await loginUser(username, password);
-      
-      if (res.role !== loginType) {
-        setError(`Access denied. You are registered as a ${res.role}.`);
+      if (isForgotPassword) {
+        await requestPasswordReset(formData.email);
+        setMessage("If an account exists, a reset link has been sent.");
         setLoading(false);
         return;
       }
-      
-      localStorage.setItem("access_token", res.access_token);
-      localStorage.setItem("role", res.role);
-      localStorage.setItem("user_id", res.user_id);
-      
-      onLogin(res.role);
-    } catch (e) {
-      const errorMessage = e.response?.data?.detail || "Invalid username or password.";
-      setError(errorMessage);
-      setLoading(false);
-    }
-  };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    if (!username || !password || !email) {
-      setError("Please fill all fields");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      await registerUser(username, email, password, loginType);
-      alert(`${loginType} registered successfully! Please login.`);
-      setShowRegister(false);
-      setUsername("");
-      setEmail("");
-      setPassword("");
+      if (isLogin) {
+        // --- LOGIN LOGIC ---
+        const data = await loginUser(formData.username, formData.password);
+        
+        // 1. Save Token
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("role", data.role);
+        localStorage.setItem("user_id", data.user_id);
+
+        // 2. Validate Role (Prevent Serviceman from logging into Customer portal)
+        if (data.role !== currentType) {
+            setError(`This account is for ${data.role}s, but you are trying to login as a ${currentType}.`);
+            localStorage.clear(); // Clear the invalid session
+            setLoading(false);
+            return;
+        }
+
+        // 3. Navigate (THE FIX)
+        if (data.role === "serviceman") {
+          navigate("/serviceman-dashboard");
+        } else {
+          navigate("/customer-dashboard");
+        }
+
+      } else {
+        // --- REGISTER LOGIC ---
+        await registerUser(formData.username, formData.email, formData.password, currentType);
+        setMessage("Registration successful! Please log in.");
+        setIsLogin(true);
+        setLoading(false);
+      }
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.message || "Registration failed.";
-      setError(errorMessage);
-    } finally {
+      console.error(err);
+      setError(err.response?.data?.detail || "An error occurred. Please try again.");
       setLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
-      <div className="background-overlay" />
-      <div className="auth-card" style={{ '--theme-color': theme.color }}>
-        <button onClick={onBack} className="back-button">←</button>
+      <div className="background-blur" />
+      
+      <div className="auth-card">
+        <button className="back-btn" onClick={onBack}>← Back</button>
+        
         <div className="header">
-          <div className="icon-wrapper">
-            {isCustomer ? <IconCustomer /> : <IconAdmin />}
-          </div>
-          <h2>{showRegister ? `Register ${isCustomer ? 'Customer' : 'Admin'}` : title}</h2>
-          <p>{showRegister ? `Create your new account` : `Sign in to continue`}</p>
+            <div className="icon-wrapper">
+                {currentType === 'customer' ? <LocalIconCustomer /> : <LocalIconAdmin />}
+            </div>
+            <h2>{currentType === 'customer' ? 'Customer' : 'Admin'} Portal</h2>
+            <p>{isForgotPassword ? "Reset Password" : (isLogin ? "Welcome Back" : "Create Account")}</p>
         </div>
-        <form onSubmit={showRegister ? handleRegister : handleLogin}>
-          <div className="input-group">
-            <label htmlFor="username">Username</label>
-            <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter your username" className="input-field" required/>
-          </div>
-          {showRegister && (
+
+        {error && <div className="error-message">{error}</div>}
+        {message && <div className="success-message">{message}</div>}
+
+        <form onSubmit={handleSubmit}>
+          {!isLogin && !isForgotPassword && (
             <div className="input-group">
-              <label htmlFor="email">Email</label>
-              <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" className="input-field" required/>
+              <label>Email Address</label>
+              <input 
+                type="email" 
+                className="input-field" 
+                placeholder="name@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                required 
+              />
             </div>
           )}
-          <div className="input-group">
-            <label htmlFor="password">Password</label>
-            <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className="input-field" required/>
-          </div>
-          <button type="submit" disabled={loading} className="submit-button"
-            style={{ background: `linear-gradient(135deg, ${theme.gradientStart}, ${theme.gradientEnd})` }}>
-            {loading ? "Processing..." : (showRegister ? "Create Account" : "Sign In")}
+          
+          {(isForgotPassword) && (
+             <div className="input-group">
+              <label>Enter your Email Address</label>
+              <input 
+                type="email" 
+                className="input-field" 
+                placeholder="name@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                required 
+              />
+            </div>
+          )}
+
+          {(!isForgotPassword) && (
+            <div className="input-group">
+              <label>Username</label>
+              <input 
+                type="text" 
+                className="input-field" 
+                placeholder="Enter username"
+                value={formData.username}
+                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                required 
+              />
+            </div>
+          )}
+
+          {!isForgotPassword && (
+            <div className="input-group">
+              <label>Password</label>
+              <input 
+                type="password" 
+                className="input-field" 
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                required 
+              />
+            </div>
+          )}
+
+          <button type="submit" className="submit-btn" disabled={loading}>
+            {loading ? "Processing..." : (isForgotPassword ? "Send Reset Link" : (isLogin ? "Login" : "Register"))}
           </button>
-          <div className="toggle-form">
-            <button type="button" onClick={() => { setShowRegister(!showRegister); setError(""); }}>
-              {showRegister ? "Already have an account? Sign In" : "Don't have an account? Register"}
-            </button>
-          </div>
         </form>
-        {error && <div className="error-message">{error}</div>}
+
+        {!isForgotPassword && (
+            <>
+                <div className="divider">or</div>
+                <button className="google-btn" onClick={handleGoogleLogin} disabled={loading}>
+                    <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                    Continue with Google
+                </button>
+            </>
+        )}
+
+        <div className="toggle-form multi-link">
+            {!isForgotPassword ? (
+                <>
+                    <button onClick={() => setIsLogin(!isLogin)}>
+                        {isLogin ? "Need an account? Register" : "Have an account? Login"}
+                    </button>
+                    {isLogin && <button onClick={() => setIsForgotPassword(true)}>Forgot Password?</button>}
+                </>
+            ) : (
+                <button onClick={() => setIsForgotPassword(false)} style={{width: '100%'}}>Back to Login</button>
+            )}
+        </div>
       </div>
+
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800&display=swap');
-        body { margin: 0; font-family: 'Inter', sans-serif; background: #1f2430; }
-        * { box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #1f2430; color: #fff; }
       `}</style>
       <style jsx>{`
-        .auth-container { min-height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; overflow: hidden; }
-        .background-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at center, rgba(36, 44, 61, 0.3) 0%, rgba(36, 44, 61, 0.6) 90%); z-index: 2; }
+        .auth-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 20px; }
+        .background-blur { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(129, 236, 236, 0.15) 0%, rgba(36, 44, 61, 0.95) 70%); z-index: 1; pointer-events: none; }
+        
         .auth-card { width: 100%; max-width: 420px; position: relative; z-index: 3; padding: 50px 40px; background-color: rgba(36, 44, 61, 0.55); backdrop-filter: blur(16px); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 25px 50px rgba(0,0,0,0.3); color: #fff; }
-        .back-button { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); font-size: 1.5rem; cursor: pointer; color: #fff; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
-        .back-button:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
         .header { text-align: center; margin-bottom: 40px; }
-        .icon-wrapper { color: var(--theme-color); margin-bottom: 15px; }
+        .icon-wrapper { width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
         .header h2 { font-size: 2rem; font-weight: 700; margin: 0 0 10px; }
-        .header p { color: rgba(255, 255, 255, 0.7); margin: 0; }
+        .header p { color: rgba(255,255,255,0.6); margin: 0; }
         .input-group { margin-bottom: 25px; }
         .input-group label { display: block; margin-bottom: 8px; font-weight: 500; color: rgba(255, 255, 255, 0.8); }
-        .input-field { width: 100%; padding: 15px; font-size: 1rem; background-color: rgba(0,0,0, 0.2); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; color: #fff; transition: border-color 0.2s ease, box-shadow 0.2s ease; outline: none; }
-        .input-field::placeholder { color: rgba(255, 255, 255, 0.4); }
-        .input-field:focus { border-color: var(--theme-color); box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-color) 30%, transparent); }
-        .submit-button { width: 100%; padding: 15px; font-size: 1.1rem; font-weight: 600; color: white; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; margin-bottom: 25px; box-shadow: 0 10px 20px -5px color-mix(in srgb, var(--theme-color) 40%, black); }
-        .submit-button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
-        .submit-button:disabled { background: #495057; cursor: not-allowed; box-shadow: none; }
+        .input-field { width: 100%; padding: 15px; font-size: 1rem; background-color: rgba(0,0,0, 0.2); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; color: #fff; transition: all 0.3s ease; box-sizing: border-box; }
+        .input-field:focus { outline: none; border-color: #81ECEC; background-color: rgba(0,0,0, 0.3); }
+        .submit-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #81ECEC, #74B9FF); border: none; border-radius: 10px; color: #1f2430; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(129, 236, 236, 0.4); }
+        .submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 0.9rem; transition: color 0.2s; }
+        .back-btn:hover { color: #fff; }
+        
+        .divider { display: flex; align-items: center; text-align: center; color: rgba(255,255,255,0.4); margin: 25px 0; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255,255,255,0.2); }
+        .divider:not(:empty)::before { margin-right: .25em; }
+        .divider:not(:empty)::after { margin-left: .25em; }
+        .google-btn { display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%; padding: 12px; background-color: #fff; color: #444; border-radius: 10px; font-weight: 600; text-decoration: none; transition: background-color 0.2s ease; margin-bottom: 25px; border: none; cursor: pointer;}
+        .google-btn:hover { background-color: #f1f1f1; }
+        .google-btn svg { width: 24px; height: 24px; }
         .toggle-form { text-align: center; }
-        .toggle-form button { background: none; border: none; color: var(--theme-color); font-size: 0.95rem; font-weight: 500; cursor: pointer; }
-        .error-message { margin-top: 20px; padding: 15px; background-color: rgba(217, 48, 77, 0.2); color: #f8b4c0; border-radius: 8px; border: 1px solid rgba(217, 48, 77, 0.5); font-size: 0.9rem; text-align: center; }
+        .toggle-form button { background: none; border: none; color: #81ECEC; font-size: 0.95rem; font-weight: 500; cursor: pointer; }
+        .toggle-form.multi-link { display: flex; justify-content: space-between; }
+        .error-message { background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; color: #ffadad; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; text-align: center; }
+        .success-message { background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; color: #a3e4d7; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; text-align: center; }
+
+        @media (max-width: 480px) {
+            .auth-card { padding: 40px 25px; }
+            .header h2 { font-size: 1.75rem; }
+        }
       `}</style>
     </div>
   );

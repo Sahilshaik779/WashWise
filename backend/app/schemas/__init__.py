@@ -1,9 +1,9 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
-from models import MembershipPlanEnum
+from app.db.models import MembershipPlanEnum
 
-# --- NEW: Service-specific workflows ---
+# --- Service-specific workflows ---
 SERVICE_WORKFLOWS = {
     "wash_and_fold": ["pending", "started", "washing", "folding", "ready_for_pickup", "picked_up"],
     "wash_and_iron": ["pending", "started", "washing", "ironing", "ready_for_pickup", "picked_up"],
@@ -33,11 +33,6 @@ class ServiceOrderItemCreate(BaseModel):
 class OrderCreate(BaseModel):
     customer_username: str
     services: List[ServiceOrderItemCreate]
-
-# --- NEW: Schema for creating an order from a QR scan ---
-class QrOrderCreate(BaseModel):
-    qr_data: str
-    quantity: int = Field(..., gt=0, le=20)
 
 # --- Schemas for API Responses ---
 class OrderItemResponse(BaseModel):
@@ -74,6 +69,10 @@ class UserCreate(BaseModel):
     password: str
     role: str
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 class UserLogin(BaseModel):
     username: str
     password: str
@@ -85,11 +84,20 @@ class UserResponse(BaseModel):
     email: EmailStr
     membership_plan: MembershipPlanEnum
     membership_expiry_date: Optional[datetime] = None
-    services_used_this_month: int
+    # CHANGED: Replaced services_used_this_month with a dictionary
+    monthly_services_used: Optional[Dict[str, int]] = Field(default_factory=dict)
 
     class Config:
         from_attributes = True
 
 class PasswordChange(BaseModel):
     current_password: str
+    new_password: str
+
+# --- NEW: Schemas for Password Reset ---
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordReset(BaseModel):
+    token: str
     new_password: str

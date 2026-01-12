@@ -1,75 +1,63 @@
-import { useState, useEffect } from "react";
+// src/App.jsx
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from "./components/LandingPage";
 import AuthPage from "./components/AuthPage";
 import CustomerDashboard from "./components/CustomerDashboard";
 import ServicemanDashboard from "./components/ServicemanDashboard";
+import GoogleCallback from "./components/GoogleCallback";
+import ResetPasswordPage from "./components/ResetPasswordPage";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { useState } from 'react';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("landing");
-  const [selectedLoginType, setSelectedLoginType] = useState(null);
-  const [role, setRole] = useState(null);
+  // We can pass this state to AuthPage to know which tab to show
+  // Alternatively, you could use URL params like /auth?type=customer
+  const [loginType, setLoginType] = useState('customer');
 
-  // Check for existing authentication on app load
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    const storedRole = localStorage.getItem("role");
-    
-    if (token && storedRole) {
-      setRole(storedRole);
-      setCurrentPage("dashboard");
-    }
-  }, []);
-
-  const handleSelectLoginType = (type) => {
-    setSelectedLoginType(type);
-    setCurrentPage("auth");
-  };
-
-  const handleLogin = (userRole) => {
-    setRole(userRole);
-    setCurrentPage("dashboard");
-  };
-
-  const handleBackToLanding = () => {
-    setCurrentPage("landing");
-    setSelectedLoginType(null);
-  };
-  
   const handleLogout = () => {
-    // Clear all authentication data
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("user_id");
-    
-    setRole(null);
-    setCurrentPage("landing");
+    localStorage.clear();
+    window.location.href = '/';
   };
 
-  // Render based on current page
-  if (currentPage === "landing") {
-    return <LandingPage onSelectLoginType={handleSelectLoginType} />;
-  }
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<LandingPage onSelectLoginType={setLoginType} />} />
+        
+        <Route path="/auth" element={
+          <AuthPage 
+            loginType={loginType} 
+            onLogin={() => {}} // Dashboard handles its own data fetching now
+            onBack={() => window.history.back()} 
+          />
+        } />
+        
+        <Route path="/google-callback" element={<GoogleCallback onLogin={() => {}} />} />
+        <Route path="/reset-password" element={<ResetPasswordPage onResetSuccess={() => window.location.href = '/auth'} />} />
 
-  if (currentPage === "auth") {
-    return (
-      <AuthPage 
-        loginType={selectedLoginType}
-        onLogin={handleLogin}
-        onBack={handleBackToLanding}
-      />
-    );
-  }
+        {/* Protected Routes */}
+        <Route 
+          path="/customer-dashboard" 
+          element={
+            <ProtectedRoute allowedRoles={['customer']}>
+              <CustomerDashboard onLogout={handleLogout} />
+            </ProtectedRoute>
+          } 
+        />
 
-  if (currentPage === "dashboard") {
-    // Pass the handleLogout function as a prop to the dashboards
-    if (role === "serviceman") {
-      return <ServicemanDashboard onLogout={handleLogout} />;
-    }
-    if (role === "customer") {
-      return <CustomerDashboard onLogout={handleLogout} />;
-    }
-  }
+        <Route 
+          path="/serviceman-dashboard" 
+          element={
+            <ProtectedRoute allowedRoles={['serviceman']}>
+              <ServicemanDashboard onLogout={handleLogout} />
+            </ProtectedRoute>
+          } 
+        />
 
-  // Fallback in case something goes wrong
-  return <LandingPage onSelectLoginType={handleSelectLoginType} />;
+        {/* Catch-all: Redirect unknown URLs to Home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }

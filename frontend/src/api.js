@@ -1,64 +1,30 @@
-import axios from "axios";
+import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
-// --- Axios Instance & Helper ---
-const axiosInstance = axios.create({
+const api = axios.create({
   baseURL: API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-axiosInstance.interceptors.request.use((config) => {
+// Automatically add token to requests
+api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-}, (error) => {
-  return Promise.reject(error);
 });
 
-// --- Authentication -----------------
-export const registerUser = (username, email, password, role) => {
-  return axiosInstance.post('/register', { username, email, password, role });
-};
-
-export const loginUser = async (username, password) => {
-  const res = await axios.post(`${API_URL}/login`, { username, password });
-  return res.data;
-};
-
-// --- Users and Account-----------------
-export const getAllUsers = () => axiosInstance.get('/users');
-export const getAccountDetails = () => axiosInstance.get('/users/me');
-export const changePassword = (current_password, new_password) => {
-  return axiosInstance.put('/users/me/password', { current_password, new_password });
-};
-export const purchaseSubscription = (plan) => {
-  return axiosInstance.put('/users/me/subscribe', { plan });
-};
-export const getMyStaticQRCodes = () => {
-  return axiosInstance.get('/users/me/qrcodes');
-};
-export const getActiveOrdersForUser = (userId) => {
-  return axiosInstance.get(`/users/${userId}/active-orders`);
-};
-// --- Orders -----------------
-export const createOrder = (orderData) => {
-  return axiosInstance.post('/orders', orderData);
-};
-export const getOrders = () => axiosInstance.get('/orders');
-export const getOrderByQr = (orderId) => axiosInstance.get(`/orders/qr/${orderId}`);
-export const updateOrderItemStatus = (itemId, status) => {
-  return axiosInstance.put(`/orders/items/${itemId}/status`, { status });
-};
-
-// --- Service Prices -----------------
+// --- HARDCODED DEFAULTS (Fallbacks until backend fetch works) ---
 export const SERVICE_PRICES = {
-    "wash_and_fold": { name: "Wash and Fold", price: 10 },
-    "wash_and_iron": { name: "Wash and Iron", price: 25 },
-    "dry_cleaning": { name: "Dry Cleaning", price: 50 },
-    "premium_wash": { name: "Premium Wash", price: 40 },
-    "steam_iron": { name: "Steam Iron", price: 15 },
+  "wash_and_fold": { name: "Wash and Fold", price: 10 },
+  "wash_and_iron": { name: "Wash and Iron", price: 15 },
+  "premium_wash": { name: "Premium Wash", price: 25 },
+  "dry_cleaning": { name: "Dry Cleaning", price: 50 },
+  "steam_iron": { name: "Steam Iron", price: 12 },
 };
 
 export const SERVICE_WORKFLOWS = {
@@ -68,3 +34,60 @@ export const SERVICE_WORKFLOWS = {
     "dry_cleaning": ["pending", "started", "tagging", "pre_treatment", "dry_cleaning", "pressing", "finishing", "ready_for_pickup", "picked_up"],
     "steam_iron": ["pending", "started", "steaming", "pressing", "finishing", "ready_for_pickup", "picked_up"]
 };
+
+// --- AUTHENTICATION ---
+export const loginUser = async (username, password) => {
+  const response = await api.post("/auth/login", { username, password });
+  return response.data;
+};
+
+export const registerUser = (username, email, password, role) => 
+  api.post("/auth/register", { username, email, password, role });
+
+export const requestPasswordReset = (email) => 
+  api.post("/auth/forgot-password", { email });
+
+export const resetPassword = (token, newPassword) => 
+  api.post("/auth/reset-password", { token, new_password: newPassword });
+
+export const changePassword = (currentPassword, newPassword) => 
+  api.put("/users/me/password", { current_password: currentPassword, new_password: newPassword });
+
+
+// --- USERS & ACCOUNTS ---
+export const getAccountDetails = () => api.get("/users/me");
+
+export const getAllUsers = () => api.get("/users/"); // Admin only
+
+export const getActiveOrdersForUser = (userId) => 
+  api.get(`/users/${userId}/active-orders`);
+
+export const getMyStaticQRCodes = () => api.get("/users/me/qrcodes");
+
+// --- SUBSCRIPTIONS ---
+// Uses PUT /me/subscribe for self-service
+export const purchaseSubscription = (plan) => 
+  api.put("/users/me/subscribe", { plan });
+
+
+// --- ORDERS ---
+export const getOrders = () => api.get("/orders/");
+
+export const createOrder = (orderData) => 
+  api.post("/orders/", orderData);
+
+export const getOrderByQr = (orderId) => 
+  api.get(`/orders/qr/${orderId}`);
+
+export const payForOrder = (orderId) => 
+  api.put(`/orders/${orderId}/pay`);
+
+export const updateOrderItemStatus = (itemId, status) => 
+  api.put(`/orders/items/${itemId}/status`, { status });
+
+
+// --- SYSTEM CONFIG ---
+// Call this in App.jsx to sync prices if you want
+export const fetchSystemConfig = () => api.get("/system/config");
+
+export default api;

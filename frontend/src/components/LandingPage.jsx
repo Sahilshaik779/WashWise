@@ -1,4 +1,6 @@
+// src/components/LandingPage.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // CHANGED: Added import
 
 const IconCustomer = () => (
   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -20,9 +22,15 @@ const WashWiseLogo = () => (
     </svg>
 );
 
-
 export default function LandingPage({ onSelectLoginType }) {
   const [hoveredPortal, setHoveredPortal] = useState(null);
+  const navigate = useNavigate(); // CHANGED: Initialize hook
+
+  // CHANGED: Helper function to handle state + navigation
+  const handlePortalSelect = (type) => {
+    onSelectLoginType(type); // Tells App.jsx which tab to show
+    navigate('/auth');       // Actually moves to the new route
+  };
 
   const portalBaseStyle = {
     flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 30px",
@@ -64,7 +72,7 @@ export default function LandingPage({ onSelectLoginType }) {
         <section className="portal-selection">
           {/* Customer Portal Card */}
           <div
-            onClick={() => onSelectLoginType("customer")}
+            onClick={() => handlePortalSelect("customer")} // CHANGED: Uses new handler
             onMouseEnter={() => setHoveredPortal("customer")}
             onMouseLeave={() => setHoveredPortal(null)}
             style={{...portalBaseStyle, ...(hoveredPortal === "customer" ? portalHoverStyle : {})}}
@@ -77,7 +85,7 @@ export default function LandingPage({ onSelectLoginType }) {
 
           {/* Admin Portal Card */}
           <div
-            onClick={() => onSelectLoginType("serviceman")}
+            onClick={() => handlePortalSelect("serviceman")} // CHANGED: Uses new handler
             onMouseEnter={() => setHoveredPortal("admin")}
             onMouseLeave={() => setHoveredPortal(null)}
             style={{...portalBaseStyle, ...(hoveredPortal === "admin" ? portalHoverStyle : {})}}

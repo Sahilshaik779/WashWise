@@ -1,8 +1,5 @@
 // src/components/ServicemanDashboard.jsx
 import React, { useEffect, useState, useMemo } from "react";
-// ✅ NEW IMPORT FOR CAMERA
-import QrReader from 'react-qr-scanner'; 
-
 import {
   createOrder,
   getOrders,
@@ -48,15 +45,12 @@ export default function ServicemanDashboard({ onLogout }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedCustomerForView, setSelectedCustomerForView] = useState(null);
 
-  // QR States
   const [qrScanInput, setQrScanInput] = useState("");
   const [qrScannerMode, setQrScannerMode] = useState('scan');
   const [scannedData, setScannedData] = useState(null);
   const [customerForQrOrder, setCustomerForQrOrder] = useState(null);
   const [customerActiveOrdersForQr, setCustomerActiveOrdersForQr] = useState([]);
   const [qrServiceQuantities, setQrServiceQuantities] = useState({});
-  // ✅ NEW: Camera Toggle State
-  const [useCamera, setUseCamera] = useState(true);
 
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -184,41 +178,12 @@ export default function ServicemanDashboard({ onLogout }) {
     }
   };
  
-  // ✅ UPDATE: Handle Camera Scan
-  const handleCamScan = (data) => {
-    if (data && data.text) {
-      setQrScanInput(data.text); // Fill the input
-      processQrData(data.text); // Auto-submit
-      setUseCamera(false); // Turn off camera after scan
-    }
-  };
-
-  const handleCamError = (err) => {
-    console.error(err);
-    // Don't alert on every frame error, just log
-  };
-
-  const handleManualQrSubmit = () => {
+  const handleQrScan = async () => {
     if (!qrScanInput.trim()) return setMessage("QR input cannot be empty.");
-    processQrData(qrScanInput);
-  };
-
-  const processQrData = async (rawData) => {
     setLoading(true);
     setMessage("");
     try {
-      // Try to parse JSON ({"order_id": 123}) or just take the raw string
-      let data = {};
-      try {
-        data = JSON.parse(rawData.trim());
-      } catch (e) {
-        // Not JSON, treat as raw ID
-        data = { order_id: rawData.trim() }; 
-        // Note: Could also be a user ID, but simple input defaults to order usually. 
-        // The backend handles logic better, but let's stick to your existing flow:
-        // If it's not JSON, we assume it's an ID string that getOrderByQr can handle.
-      }
-
+      const data = JSON.parse(qrScanInput.trim());
       if (data.order_id) {
         const { data: orderData } = await getOrderByQr(data.order_id);
         setScannedData({ type: 'order', data: orderData });
@@ -233,14 +198,20 @@ export default function ServicemanDashboard({ onLogout }) {
         setQrScannerMode('user_actions');
       } 
       else {
-        // Fallback: If JSON parsed but no known key, or raw string passed to catch block
-        // Try fetching as Order ID directly
-        const { data: orderData } = await getOrderByQr(rawData.trim());
-        setScannedData({ type: 'order', data: orderData });
-        setQrScannerMode('view_single_order');
+        throw new Error("Invalid QR code data format.");
       }
     } catch (err) {
-      setMessage(`Scan Failed: ${err.response?.data?.detail || "Invalid QR Code or ID"}`);
+      if (err instanceof SyntaxError) {
+        try {
+          const { data: orderData } = await getOrderByQr(qrScanInput.trim());
+          setScannedData({ type: 'order', data: orderData });
+          setQrScannerMode('view_single_order');
+        } catch (finalErr) {
+          setMessage("Failed to process QR. Invalid JSON and not a valid Order ID.");
+        }
+      } else {
+        setMessage(`Error: ${err.response?.data?.detail || err.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -275,7 +246,6 @@ export default function ServicemanDashboard({ onLogout }) {
     setCustomerActiveOrdersForQr([]);
     setQrServiceQuantities({});
     setMessage("");
-    setUseCamera(true); // Turn camera back on
   };
 
   const handleStatusChange = async (itemId, status) => { 
@@ -382,7 +352,6 @@ export default function ServicemanDashboard({ onLogout }) {
          
           {(activeTab === "active-orders" || activeTab === "past-orders") && (
             <div className="tab-content">
-              {/* ... (Orders Table Code kept same, simplified here for brevity, assume content is present) ... */}
               <div className="card">
                 <h3 className="card-title">Filters</h3>
                 <div className="grid three-cols">
@@ -449,8 +418,7 @@ export default function ServicemanDashboard({ onLogout }) {
           )}
 
           {activeTab === "manage-customers" && ( 
-             /* ... (Customers Tab Code kept same) ... */
-             <div className="tab-content">
+            <div className="tab-content">
               {!selectedCustomerForView ? (
                 <div className="card">
                   <div className="table-container">
@@ -510,7 +478,6 @@ export default function ServicemanDashboard({ onLogout }) {
           )}
 
           {activeTab === "add-order" && ( 
-             /* ... (Add Order Tab Code kept same) ... */
             <div className="tab-content">
               <div className="card">
                 <div className="grid two-cols" style={{alignItems: 'start'}}>
@@ -530,6 +497,7 @@ export default function ServicemanDashboard({ onLogout }) {
                         )}
                     </div>
                   </div>
+                  {/* Reuse services list logic from prev version, kept brief for clarity */}
                   <div className="services-quantity-list">
                       {Object.entries(SERVICE_PRICES).map(([serviceKey, serviceInfo]) => (
                           <div key={serviceKey} className="service-quantity-item">
@@ -554,46 +522,17 @@ export default function ServicemanDashboard({ onLogout }) {
           {activeTab === "qr-scanner" && (
             <div className="tab-content">
               <div className="card">
-                <h3 className="card-title">Scan QR Code</h3>
                 {qrScannerMode === 'scan' && (
-                  <div className="qr-section">
-                    
-                    {/* ✅ CAMERA TOGGLE */}
-                    <div style={{marginBottom: '15px', display: 'flex', gap: '10px'}}>
-                       <button className={`btn-secondary ${useCamera ? 'active' : ''}`} onClick={() => setUseCamera(true)}>📷 Use Camera</button>
-                       <button className={`btn-secondary ${!useCamera ? 'active' : ''}`} onClick={() => setUseCamera(false)}>⌨️ Manual Entry</button>
-                    </div>
-
-                    {/* ✅ CAMERA VIEW */}
-                    {useCamera && (
-                        <div className="camera-viewport">
-                            <QrReader
-                                delay={300}
-                                style={{ height: 240, width: '100%', maxWidth: 320, borderRadius: 8, overflow: 'hidden' }}
-                                onError={handleCamError}
-                                onScan={handleCamScan}
-                            />
-                            <p style={{fontSize: '0.9rem', color: '#666', marginTop: '10px'}}>Point camera at the customer's QR code.</p>
-                        </div>
-                    )}
-
-                    {/* ✅ MANUAL INPUT FALLBACK */}
-                    {!useCamera && (
-                        <div className="qr-input-container">
-                        <input type="text" placeholder="Enter Order ID or User ID..." value={qrScanInput} onChange={(e) => setQrScanInput(e.target.value)} autoFocus />
-                        <button onClick={handleManualQrSubmit} disabled={loading || !qrScanInput.trim()} className="btn-primary">Process</button>
-                        </div>
-                    )}
+                  <div className="qr-input-container">
+                    <input type="text" placeholder="Scan QR or enter ID..." value={qrScanInput} onChange={(e) => setQrScanInput(e.target.value)} autoFocus />
+                    <button onClick={handleQrScan} disabled={loading || !qrScanInput.trim()} className="btn-primary">Process</button>
                   </div>
                 )}
-                
-                {/* Simplified view for QR Actions */}
+                {/* Simplified view for QR Actions (reuse logic from original file if needed) */}
                 {qrScannerMode !== 'scan' && (
                     <div style={{textAlign: 'center', padding: '20px'}}>
-                        <div style={{fontSize: '3rem', marginBottom: '10px'}}>✅</div>
-                        <h3>{qrScannerMode === 'view_single_order' ? 'Order Found!' : 'Customer Found!'}</h3>
-                        <p style={{color: '#666'}}>Data loaded successfully.</p>
-                        <button onClick={resetQrScanner} className="btn-secondary" style={{marginTop: '15px'}}>Scan Another</button>
+                        <h3>{qrScannerMode === 'view_single_order' ? 'Order Found' : 'Customer Found'}</h3>
+                        <button onClick={resetQrScanner} className="btn-secondary">Scan Another</button>
                     </div>
                 )}
               </div>
@@ -601,8 +540,7 @@ export default function ServicemanDashboard({ onLogout }) {
           )}
 
           {activeTab === "settings" && ( 
-             /* ... (Settings Tab Code kept same) ... */
-             <div className="tab-content">
+            <div className="tab-content">
               <div className="card">
                 <h3 className="card-title">Change Password</h3>
                 <form onSubmit={handleChangePasswordSubmit}>
@@ -624,7 +562,7 @@ export default function ServicemanDashboard({ onLogout }) {
         * { box-sizing: border-box; }
       `}</style>
       <style jsx>{`
-        /* --- LAYOUT & SIDEBAR (Kept exactly as before) --- */
+        /* --- LAYOUT & SIDEBAR --- */
         .app-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
         .top-bar { position: absolute; top: 0; left: 0; right: 0; height: 65px; background-color: #ffffff; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; border-bottom: 1px solid #dee2e6; z-index: 1000; }
         .logo-section { display: flex; align-items: center; gap: 15px; }
@@ -635,16 +573,20 @@ export default function ServicemanDashboard({ onLogout }) {
         .btn-logout:hover { background: #dc3545; color: white; }
 
         .dashboard-layout { display: flex; height: 100%; padding-top: 65px; }
+        
         .sidebar { width: 260px; background-color: #2A2F45; color: #fff; padding: 15px 10px; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
         .sidebar.collapsed { width: 80px; }
+        
         .sidebar-header { display: flex; justify-content: flex-end; padding: 0 5px; margin-bottom: 20px; min-height: 30px; }
         .sidebar.collapsed .sidebar-header { justify-content: center; padding: 0; }
+        
         .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #556b8d; transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #48C9B0; }
         input:checked + .slider:before { transform: translateX(22px); }
+
         .sidebar-nav { list-style: none; padding: 0; margin: 0; }
         .sidebar-nav li { margin-bottom: 8px; }
         .sidebar-nav button { display: flex; align-items: center; gap: 15px; width: 100%; padding: 12px 15px; border-radius: 8px; background: transparent; border: none; color: rgba(255, 255, 255, 0.7); font-size: 1rem; font-weight: 500; cursor: pointer; text-align: left; transition: all 0.2s ease; white-space: nowrap; }
@@ -653,24 +595,28 @@ export default function ServicemanDashboard({ onLogout }) {
         .sidebar-nav button.active .nav-icon-wrapper { background-color: #48C9B0; color: white; }
         .nav-icon-wrapper { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; transition: background 0.2s; flex-shrink: 0; }
         .nav-icon { width: 20px; height: 20px; }
+        
         .sidebar.collapsed .nav-label, .sidebar.collapsed .nav-count { display: none; }
         .sidebar.collapsed .sidebar-nav button { justify-content: center; padding: 0; width: 48px; height: 48px; border-radius: 50%; margin: 0 auto; }
 
-        /* --- CONTENT AREA & CARDS --- */
+        /* --- CONTENT AREA --- */
         .content-area { flex-grow: 1; padding: 30px; overflow-y: auto; background-color: #f4f7f9; }
         .content-title { margin-bottom: 30px; font-size: 2rem; color: #2A2F45; }
+        
+        /* --- CARDS & GRID --- */
         .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .orders-card { padding: 0; }
         .grid { display: grid; gap: 20px; margin-bottom: 25px; }
         .three-cols { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
         .two-cols { grid-template-columns: 1fr 1fr; gap: 30px; }
         
-        /* --- TABLE STYLES --- */
+        /* --- TABLES & LISTS --- */
         .item-list-header-wrapper { overflow-x: auto; }
         .item-list-content { overflow-x: auto; }
         .item-list-header { display: flex; padding: 15px 10px; border-bottom: 2px solid #dee2e6; font-weight: 700; color: #555; background: #f8f9fa; min-width: 800px; }
         .item-row-card { display: flex; padding: 15px 10px; border-bottom: 1px solid #eee; align-items: center; min-width: 800px; transition: background 0.2s; }
         .item-row-card:hover { background-color: #f9f9f9; }
+        
         .item-col { padding: 0 10px; display: flex; flex-direction: column; justify-content: center; }
         .col-sl { width: 50px; text-align: center; color: #888; font-weight: bold; }
         .col-cust { flex: 1; font-weight: 600; color: #333; }
@@ -696,7 +642,7 @@ export default function ServicemanDashboard({ onLogout }) {
         .sub-tab-item.active .item-count-badge { background: #e8f8f5; color: #48C9B0; }
         .sub-tab-content { padding: 20px; }
         
-        /* --- CUSTOMER & ORDERS --- */
+        /* --- CUSTOMER MANAGEMENT --- */
         .table-container { overflow-x: auto; }
         .data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
         .data-table th { text-align: left; padding: 15px; background: #f8f9fa; color: #555; font-weight: 700; border-bottom: 2px solid #eee; }
@@ -720,13 +666,10 @@ export default function ServicemanDashboard({ onLogout }) {
         .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
         .btn-secondary { padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
         .btn-secondary:hover { background: #7f8c8d; }
-        .btn-secondary.active { background: #34495e; color: white; border: 2px solid #2c3e50; }
         
-        /* --- SCANNER --- */
-        .qr-section { display: flex; flex-direction: column; align-items: center; max-width: 400px; margin: 0 auto; }
-        .qr-input-container { display: flex; gap: 15px; align-items: center; width: 100%; }
+        /* --- SCANNER & ADD ORDER --- */
+        .qr-input-container { display: flex; gap: 15px; align-items: center; margin-bottom: 20px; }
         .qr-input-container input { flex: 1; }
-        .camera-viewport { width: 100%; background: #000; border-radius: 8px; display: flex; flex-direction: column; align-items: center; padding: 10px; }
         
         .autocomplete-container { position: relative; }
         .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -740,6 +683,7 @@ export default function ServicemanDashboard({ onLogout }) {
         .quantity-control button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #ddd; background: white; cursor: pointer; font-size: 1.2rem; line-height: 1; display: grid; place-items: center; }
         .quantity-control input { width: 50px; text-align: center; padding: 5px; border: none; background: transparent; font-weight: bold; }
         
+        /* --- UTILS --- */
         .message { padding: 12px 20px; margin-bottom: 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: 500; }
         .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }

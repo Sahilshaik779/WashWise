@@ -1,5 +1,7 @@
 // src/components/CustomerDashboard.jsx
 import React, { useEffect, useState, useMemo } from "react";
+import QRCode from "react-qr-code"; // <--- NEW IMPORT
+
 import {
   getOrders,
   changePassword,
@@ -36,6 +38,8 @@ export default function CustomerDashboard({ onLogout }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  // Note: myQrCodes is less relevant now that we generate them on frontend, 
+  // but we keep it in case you have other uses.
   const [myQrCodes, setMyQrCodes] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -216,11 +220,15 @@ export default function CustomerDashboard({ onLogout }) {
                             Pay Now
                           </button>
                         )}
-                        {item.orderQrCodeUrl && (
-                          <div className="qr-container">
-                            <img src={`${API_URL}${item.orderQrCodeUrl}`} onClick={() => handleImageClick(item.orderQrCodeUrl)} alt="QR" />
-                          </div>
-                        )}
+                        {/* --- UPDATED: QR Code Generator --- */}
+                        <div className="qr-container" style={{ background: 'white', padding: '6px', borderRadius: '4px', border: '1px solid #eee' }}>
+                            <QRCode
+                                size={64}
+                                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                value={JSON.stringify({ order_id: item.orderId })}
+                                viewBox={`0 0 256 256`}
+                            />
+                        </div>
                       </div>
                     </div>
                  </div>
@@ -262,9 +270,15 @@ export default function CustomerDashboard({ onLogout }) {
                     </div>
                     <div className="card qr-card">
                         <h3 className="card-title">Your Static QR Code</h3>
-                        {myQrCodes?.user_qr ? (
-                            <div className="static-qr-container">
-                                <img src={`${API_URL}${myQrCodes.user_qr}`} alt="User QR" onClick={() => handleImageClick(myQrCodes.user_qr)} />
+                        {/* --- UPDATED: User Static QR Generator --- */}
+                        {accountInfo.id ? (
+                            <div className="static-qr-container" style={{ background: 'white', padding: '16px', display: 'inline-block', borderRadius: '8px' }}>
+                                <QRCode
+                                    size={150}
+                                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                    value={JSON.stringify({ user_id: accountInfo.id })}
+                                    viewBox={`0 0 256 256`}
+                                />
                             </div>
                         ) : <p>Loading QR...</p>}
                     </div>
@@ -430,9 +444,8 @@ export default function CustomerDashboard({ onLogout }) {
         .progress-bar-inner { height: 100%; background: linear-gradient(90deg, #48C9B0, #3498db); transition: width 0.5s; }
         
         .card-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-        .qr-container img { width: 50px; height: 50px; cursor: pointer; border-radius: 4px; border: 1px solid #eee; }
+        .qr-container { display: flex; justify-content: center; }
         .static-qr-container { display: flex; justify-content: center; padding: 10px; }
-        .static-qr-container img { width: 100%; max-width: 150px; cursor: pointer; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         
         .btn-primary { padding: 10px 20px; background: #48C9B0; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
         .btn-primary:hover:not(:disabled) { background: #40B39E; transform: translateY(-1px); }
